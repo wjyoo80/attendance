@@ -237,7 +237,24 @@ body {
   cursor: pointer;
   font-size: .88rem;
   transition: .18s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+
+.class-delete-btn {
+  font-size: 0.75rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.class-delete-btn:hover {
+  color: var(--accent3);
+  background: rgba(247,129,102,0.1);
+}
+
 .class-tab:hover { border-color: var(--accent); color: var(--accent); }
 .class-tab.active { background: var(--accent); color: #0d1117; border-color: var(--accent); font-weight: 600; }
 .class-tab.stats-tab { border-color: rgba(247,129,102,.4); color: #f78166; }
@@ -674,8 +691,40 @@ function renderClassTabs() {
   Object.keys(classes).forEach(cls => {
     const el = document.createElement('div');
     el.className = 'class-tab' + (cls === state.activeClass ? ' active' : '');
-    el.textContent = cls;
-    el.onclick = () => selectClass(cls);
+
+    el.innerHTML = `
+      <span>${cls}</span>
+      ${state.isAdmin ? `<span class="class-delete-btn" title="반 삭제">✕</span>` : ``}
+    `;
+
+    // 반 선택
+    el.onclick = (e) => {
+      // if (e.target.classList.contains('class-delete-btn')) return;
+      if (e.target.closest('.class-delete-btn')) return;
+      selectClass(cls);
+    };
+
+    // 삭제 버튼 이벤트
+    if (state.isAdmin) {
+      el.querySelector('.class-delete-btn').onclick = async (e) => {
+        e.stopPropagation();
+        if (!confirm(`"${cls}" 반을 삭제하시겠습니까?`)) return;
+
+        await api(`/api/years/${state.activeYear}/classes/${encodeURIComponent(cls)}`, 'DELETE');
+
+        state.yearData = await api(`/api/years/${state.activeYear}`);
+
+        // 선택된 반이 삭제된 경우 초기화
+        if (state.activeClass === cls) {
+          state.activeClass = null;
+          document.getElementById('panel').innerHTML = '';
+        }
+
+        renderClassTabs();
+        showToast('반이 삭제되었습니다');
+      };
+    }
+
     bar.appendChild(el);
   });
 
