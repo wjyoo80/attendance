@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>광은 중고등부 출석부</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ── reset & vars ─────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0d1117;
+  --surface:  #161b22;
+  --surface2: #1f2937;
+  --border:   #30363d;
+  --accent:   #58a6ff;
+  --accent2:  #3fb950;
+  --accent3:  #f78166;
+  --text:     #e6edf3;
+  --muted:    #8b949e;
+  --radius:   12px;
+  --font:     'Noto Sans KR', sans-serif;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── login screen ─────────────────────────────────────── */
+#login-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at 50% 0%, #1a2744 0%, #0d1117 60%);
+  position: relative;
+  overflow: hidden;
+}
+#login-screen::before {
+  content: '';
+  position: absolute;
+  width: 600px; height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(88,166,255,0.06) 0%, transparent 70%);
+  top: -100px; left: 50%; transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 48px 40px;
+  width: 340px;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0,0,0,.6);
+  animation: fadeUp .5s ease both;
+}
+.login-title {
+  font-family: 'Gowun Dodum', serif;
+  font-size: 2rem;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.login-sub {
+  color: var(--muted);
+  font-size: .85rem;
+  margin-bottom: 36px;
+}
+.login-icon {
+  font-size: 3rem;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 0 16px rgba(88,166,255,.4));
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 16px;
+}
+.input-group input {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: .95rem;
+  font-family: var(--font);
+  outline: none;
+  transition: border .2s;
+  text-align: center;
+  letter-spacing: 0.15em;
+}
+.input-group input::placeholder { letter-spacing: 0; color: var(--muted); }
+.input-group input:focus { border-color: var(--accent); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font);
+  font-size: .9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .18s;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #0d1117;
+  width: 100%;
+  justify-content: center;
+  font-size: 1rem;
+}
+.btn-primary:hover { background: #79b8ff; transform: translateY(-1px); }
+.btn-sm { padding: 7px 14px; font-size: .82rem; }
+.btn-success { background: var(--accent2); color: #0d1117; }
+.btn-success:hover { background: #56d364; }
+.btn-danger { background: var(--accent3); color: #fff; }
+.btn-danger:hover { background: #ff7b72; }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+.btn-outline:hover { background: var(--accent); color: #0d1117; }
+
+.login-error {
+  color: var(--accent3);
+  font-size: .82rem;
+  margin-top: 10px;
+  min-height: 18px;
+}
+
+/* ── main app ────────────────────────────────────────── */
+#app { display: none; flex-direction: column; min-height: 100vh; }
+
+/* header */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  height: 60px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+}
+.app-logo {
+  font-family: 'Gowun Dodum', serif;
+  font-size: 1.3rem;
+  color: var(--accent);
+}
+.app-meta { display: flex; align-items: center; gap: 12px; }
+.role-badge {
+  font-size: .75rem;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(88,166,255,.15);
+  color: var(--accent);
+  border: 1px solid rgba(88,166,255,.3);
+}
+.role-badge.admin { background: rgba(63,185,80,.12); color: var(--accent2); border-color: rgba(63,185,80,.3); }
+
+/* year tabs */
+.year-tabs-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+}
+.year-tab {
+  padding: 12px 20px;
+  font-size: .9rem;
+  cursor: pointer;
+  color: var(--muted);
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  transition: all .18s;
+}
+.year-tab:hover { color: var(--text); }
+.year-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.add-year-btn {
+  margin-left: auto;
+  font-size: 1.3rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: .18s;
+  flex-shrink: 0;
+}
+.add-year-btn:hover { color: var(--accent2); background: rgba(63,185,80,.08); }
+
+/* content area */
+.content {
+  flex: 1;
+  padding: 24px 28px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* class tabs */
+.class-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+  align-items: center;
+}
+.class-tab {
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: .88rem;
+  transition: .18s;
+}
+.class-tab:hover { border-color: var(--accent); color: var(--accent); }
+.class-tab.active { background: var(--accent); color: #0d1117; border-color: var(--accent); font-weight: 600; }
+.class-tab.stats-tab { border-color: rgba(247,129,102,.4); color: #f78166; }
+.class-tab.stats-tab.active { background: var(--accent3); border-color: var(--accent3); color: #fff; }
+
+/* class panel */
+.panel { animation: fadeIn .25s ease; }
+
+/* date selector */
+.date-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.date-row input[type="date"] {
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: .9rem;
+  outline: none;
+  transition: border .2s;
+}
+.date-row input[type="date"]:focus { border-color: var(--accent); }
+
+/* student list */
+.student-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.student-count { color: var(--muted); font-size: .85rem; }
+
+.student-list { display: flex; flex-direction: column; gap: 8px; }
+
+.student-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all .18s;
+  user-select: none;
+}
+.student-item:hover { border-color: var(--accent); background: rgba(88,166,255,.04); }
+.student-item.present {
+  border-color: var(--accent2);
+  background: rgba(63,185,80,.06);
+}
+
+.checkbox {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: .18s;
+  font-size: 13px;
+}
+.student-item.present .checkbox {
+  background: var(--accent2);
+  border-color: var(--accent2);
+  color: #0d1117;
+}
+
+.student-name { font-size: .95rem; flex: 1; }
+
+.student-actions { display: flex; gap: 6px; opacity: 0; transition: .18s; }
+.student-item:hover .student-actions { opacity: 1; }
+
+/* add student */
+.add-student-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+.add-student-row input {
+  flex: 1;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: .9rem;
+  outline: none;
+  transition: border .2s;
+}
+.add-student-row input:focus { border-color: var(--accent2); }
+
+/* save bar */
+.save-bar {
+  position: fixed;
+  bottom: 24px; right: 28px;
+  display: flex; gap: 10px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  animation: slideUp .3s ease;
+}
+.save-bar .present-count { color: var(--accent2); font-weight: 600; font-size: .9rem; }
+
+/* stats */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+}
+.stat-card .stat-val { font-size: 2rem; font-weight: 700; color: var(--accent); }
+.stat-card .stat-label { font-size: .78rem; color: var(--muted); margin-top: 4px; }
+
+.stats-tabs {
+  display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.stats-tab-btn {
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: .85rem;
+  transition: .18s;
+  background: transparent;
+  font-family: var(--font);
+}
+.stats-tab-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+.stats-tab-btn.active { background: var(--accent3); border-color: var(--accent3); color: #fff; }
+
+.chart-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+  position: relative;
+}
+.chart-title {
+  font-size: .9rem;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+.student-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+.stu-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.stu-stat-card .stu-name { font-size: .9rem; font-weight: 500; margin-bottom: 4px; }
+.stu-stat-card .stu-class { font-size: .75rem; color: var(--muted); margin-bottom: 10px; }
+.stu-rate-bar {
+  height: 6px; border-radius: 3px;
+  background: var(--surface2);
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+.stu-rate-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent2);
+  transition: width .5s ease;
+}
+.stu-stat-nums { font-size: .78rem; color: var(--muted); display: flex; justify-content: space-between; }
+
+/* modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.7);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+  animation: fadeIn .15s;
+}
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  width: 320px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.7);
+  animation: fadeUp .2s;
+}
+.modal h3 { font-size: 1.1rem; margin-bottom: 20px; }
+.modal input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: .9rem;
+  outline: none;
+  margin-bottom: 14px;
+}
+.modal input:focus { border-color: var(--accent); }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+
+/* toast */
+.toast {
+  position: fixed;
+  bottom: 80px; left: 50%; transform: translateX(-50%);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 10px 20px;
+  font-size: .88rem;
+  z-index: 300;
+  animation: fadeUp .2s ease both, fadeOut .3s ease 2s both;
+  pointer-events: none;
+}
+
+/* empty state */
+.empty { text-align: center; color: var(--muted); padding: 60px 0; font-size: .9rem; }
+.empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+/* animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeOut {
+  to { opacity: 0; }
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* responsive */
+@media (max-width: 640px) {
+  .content { padding: 16px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .app-header { padding: 0 16px; }
+  .year-tabs-bar { padding: 0 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ─────────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-icon">📋</div>
+    <h1 class="login-title">출석부</h1>
+    <p class="login-sub">비밀번호를 입력해 주세요</p>
+    <div class="input-group">
+      <input type="password" id="pw-input" placeholder="비밀번호" autocomplete="off" />
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">입장</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ── APP ───────────────────────────────────────────── -->
+<div id="app">
+  <header class="app-header">
+    <div class="app-logo">📋 출석부</div>
+    <div class="app-meta">
+      <span class="role-badge" id="role-badge">일반</span>
+      <button class="btn btn-ghost btn-sm" id="pw-change-btn" style="display:none" onclick="openPasswordModal()">🔑 비밀번호 변경</button>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">로그아웃</button>
+    </div>
+  </header>
+
+  <!-- year tabs -->
+  <div class="year-tabs-bar" id="year-tabs">
+    <div id="add-year-btn" class="add-year-btn" title="연도 추가">＋</div>
+  </div>
+
+  <div class="content">
+    <!-- class tabs -->
+    <div class="class-tabs" id="class-tabs"></div>
+    <!-- panel -->
+    <div id="panel"></div>
+  </div>
+</div>
+
+<!-- ── MODAL ──────────────────────────────────────────── -->
+<div id="modal-overlay" class="modal-overlay" style="display:none" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 id="modal-title"></h3>
+    <input type="text" id="modal-input" />
+    <div class="modal-btns">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">취소</button>
+      <button class="btn btn-primary btn-sm" id="modal-confirm">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── state ──────────────────────────────────────────── */
+let state = {
+  isAdmin: false,
+  years: [],
+  activeYear: null,
+  yearData: null,       // {year, classes, attendance}
+  activeClass: null,    // "중1" | "stats"
+  selectedDate: today(),
+  presentSet: new Set(),
+  statsMode: 'date',    // 'date'|'class'|'student'
+  statsData: null,
+  charts: {}
+};
+
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
+
+/* ── api ──────────────────────────────────────────── */
+async function api(url, method='GET', body=null) {
+  const opts = { method, headers: {'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+/* ── auth ──────────────────────────────────────────── */
+document.getElementById('pw-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+async function doLogin() {
+  const pw = document.getElementById('pw-input').value;
+  try {
+    const data = await api('/api/login','POST',{password:pw});
+    state.isAdmin = data.role === 'admin';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('role-badge').textContent = state.isAdmin ? '관리자' : '일반';
+    if (state.isAdmin) document.getElementById('role-badge').classList.add('admin');
+    document.getElementById('add-year-btn').style.display = state.isAdmin ? '' : 'none';
+    document.getElementById('pw-change-btn').style.display = state.isAdmin ? '' : 'none';
+    await loadYears();
+  } catch {
+    document.getElementById('login-error').textContent = '비밀번호가 올바르지 않습니다.';
+  }
+}
+
+async function doLogout() {
+  await api('/api/logout','POST');
+  location.reload();
+}
+
+/* ── years ──────────────────────────────────────────── */
+async function loadYears() {
+  state.years = await api('/api/years');
+  renderYearTabs();
+  if (state.years.length) selectYear(state.years[0]);
+}
+
+function renderYearTabs() {
+  const bar = document.getElementById('year-tabs');
+  // clear existing year tabs
+  bar.querySelectorAll('.year-tab').forEach(el => el.remove());
+  const addBtn = document.getElementById('add-year-btn');
+  state.years.forEach(y => {
+    const el = document.createElement('div');
+    el.className = 'year-tab' + (y === state.activeYear ? ' active' : '');
+    el.textContent = y + '년';
+    el.onclick = () => selectYear(y);
+    bar.insertBefore(el, addBtn);
+  });
+}
+
+document.getElementById('add-year-btn').onclick = () => {
+  if (!state.isAdmin) return;
+  openModal('연도 추가', '예: 2025', async val => {
+    const y = parseInt(val);
+    if (isNaN(y)) return;
+    await api('/api/years','POST',{year:y});
+    state.years = [...new Set([...state.years, y])].sort((a,b)=>b-a);
+    renderYearTabs();
+    selectYear(y);
+  });
+};
+
+async function selectYear(year) {
+  state.activeYear = year;
+  state.yearData = await api(`/api/years/${year}`);
+  state.activeClass = null;
+  renderYearTabs();
+  renderClassTabs();
+  document.getElementById('panel').innerHTML = '';
+}
+
+/* ── classes ──────────────────────────────────────────── */
+function renderClassTabs() {
+  const bar = document.getElementById('class-tabs');
+  bar.innerHTML = '';
+
+  // stats tab
+  const stab = document.createElement('div');
+  stab.className = 'class-tab stats-tab' + (state.activeClass === 'stats' ? ' active' : '');
+  stab.textContent = '📊 통계';
+  stab.onclick = () => selectClass('stats');
+  bar.appendChild(stab);
+
+  // class tabs
+  const classes = state.yearData?.classes || {};
+  Object.keys(classes).forEach(cls => {
+    const el = document.createElement('div');
+    el.className = 'class-tab' + (cls === state.activeClass ? ' active' : '');
+    el.textContent = cls;
+    el.onclick = () => selectClass(cls);
+    bar.appendChild(el);
+  });
+
+  // add class btn (admin)
+  if (state.isAdmin) {
+    const add = document.createElement('div');
+    add.className = 'class-tab';
+    add.style.borderStyle = 'dashed';
+    add.textContent = '＋ 반 추가';
+    add.onclick = () => openModal('반 추가', '예: 중1, 고2', async val => {
+      await api(`/api/years/${state.activeYear}/classes`,'POST',{name:val});
+      state.yearData = await api(`/api/years/${state.activeYear}`);
+      renderClassTabs();
+    });
+    bar.appendChild(add);
+  }
+}
+
+async function selectClass(cls) {
+  state.activeClass = cls;
+  renderClassTabs();
+  if (cls === 'stats') {
+    await renderStats();
+  } else {
+    await renderClassPanel(cls);
+  }
+}
+
+/* ── class panel ─────────────────────────────────────── */
+async function renderClassPanel(cls) {
+  const panel = document.getElementById('panel');
+  const students = state.yearData.classes[cls] || [];
+
+  // load existing attendance for today
+  let savedAttendance = {};
+  try {
+    savedAttendance = await api(`/api/years/${state.activeYear}/attendance/${state.selectedDate}`);
+  } catch {}
+  const savedPresent = savedAttendance[cls] || [];
+  state.presentSet = new Set(savedPresent);
+
+  panel.innerHTML = `
+    <div class="panel">
+      <div class="date-row">
+        <label style="color:var(--muted);font-size:.85rem">날짜</label>
+        <input type="date" id="date-picker" value="${state.selectedDate}" max="${today()}" />
+        <span style="color:var(--muted);font-size:.85rem" id="att-status"></span>
+      </div>
+      <div class="student-list-header">
+        <span style="font-size:1rem;font-weight:500">${cls} 명단</span>
+        <span class="student-count" id="stu-count">${students.length}명</span>
+      </div>
+      <div class="student-list" id="student-list"></div>
+      ${state.isAdmin ? `
+        <div class="add-student-row">
+          <input type="text" id="new-student-input" placeholder="학생 이름 추가" />
+          <button class="btn btn-success btn-sm" onclick="addStudent('${cls}')">추가</button>
+        </div>
+      ` : ''}
+    </div>
+    <div class="save-bar">
+      <span class="present-count" id="present-count">출석 0명</span>
+      <button class="btn btn-success btn-sm" onclick="saveAttendance('${cls}')">✓ 저장</button>
+    </div>
+  `;
+
+  document.getElementById('date-picker').addEventListener('change', async e => {
+    state.selectedDate = e.target.value;
+    let saved = {};
+    try { saved = await api(`/api/years/${state.activeYear}/attendance/${state.selectedDate}`); } catch {}
+    state.presentSet = new Set(saved[cls] || []);
+    renderStudents(cls);
+  });
+
+  if (state.isAdmin) {
+    document.getElementById('new-student-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addStudent(cls);
+    });
+  }
+
+  renderStudents(cls);
+}
+
+function renderStudents(cls) {
+  const students = state.yearData.classes[cls] || [];
+  const list = document.getElementById('student-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  if (!students.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">👤</div>학생을 추가해 주세요</div>';
+  }
+
+  students.forEach(name => {
+    const present = state.presentSet.has(name);
+    const el = document.createElement('div');
+    el.className = 'student-item' + (present ? ' present' : '');
+    el.innerHTML = `
+      <div class="checkbox">${present ? '✓' : ''}</div>
+      <span class="student-name">${name}</span>
+      ${state.isAdmin ? `
+        <div class="student-actions">
+          <button class="btn btn-danger btn-sm" onclick="deleteStudent(event,'${cls}','${name}')">삭제</button>
+        </div>
+      ` : ''}
+    `;
+    el.onclick = e => {
+      if (e.target.closest('.student-actions')) return;
+      if (state.presentSet.has(name)) state.presentSet.delete(name);
+      else state.presentSet.add(name);
+      renderStudents(cls);
+      updatePresentCount();
+    };
+    list.appendChild(el);
+  });
+
+  updatePresentCount();
+}
+
+function updatePresentCount() {
+  const el = document.getElementById('present-count');
+  if (el) el.textContent = `출석 ${state.presentSet.size}명`;
+}
+
+async function saveAttendance(cls) {
+  await api(`/api/years/${state.activeYear}/attendance`,'POST',{
+    date: state.selectedDate,
+    class_name: cls,
+    present: [...state.presentSet]
+  });
+  showToast('✅ 출석이 저장되었습니다');
+}
+
+async function addStudent(cls) {
+  const inp = document.getElementById('new-student-input');
+  const name = inp.value.trim();
+  if (!name) return;
+  await api(`/api/years/${state.activeYear}/classes/${encodeURIComponent(cls)}/students`,'POST',{name});
+  inp.value = '';
+  state.yearData = await api(`/api/years/${state.activeYear}`);
+  renderClassTabs();
+  renderStudents(cls);
+  document.getElementById('stu-count').textContent = `${state.yearData.classes[cls].length}명`;
+  showToast('학생이 추가되었습니다');
+}
+
+async function deleteStudent(e, cls, name) {
+  e.stopPropagation();
+  if (!confirm(`"${name}" 학생을 삭제하시겠습니까?`)) return;
+  await api(`/api/years/${state.activeYear}/classes/${encodeURIComponent(cls)}/students/${encodeURIComponent(name)}`,'DELETE');
+  state.yearData = await api(`/api/years/${state.activeYear}`);
+  state.presentSet.delete(name);
+  renderStudents(cls);
+}
+
+/* ── stats ─────────────────────────────────────────────── */
+async function renderStats() {
+  const panel = document.getElementById('panel');
+  panel.innerHTML = `
+    <div class="panel">
+      <div class="stats-tabs">
+        <button class="stats-tab-btn active" data-mode="date" onclick="switchStatsMode(this,'date')">날짜별 전체</button>
+        <button class="stats-tab-btn" data-mode="class" onclick="switchStatsMode(this,'class')">반별 출석률</button>
+        <button class="stats-tab-btn" data-mode="student" onclick="switchStatsMode(this,'student')">개인별 출석</button>
+      </div>
+      <div id="stats-content"><div class="empty"><div class="empty-icon">⏳</div>불러오는 중...</div></div>
+    </div>
+  `;
+
+  state.statsData = await api(`/api/years/${state.activeYear}/stats`);
+  renderStatsContent('date');
+}
+
+function switchStatsMode(btn, mode) {
+  document.querySelectorAll('.stats-tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.statsMode = mode;
+  renderStatsContent(mode);
+}
+
+function renderStatsContent(mode) {
+  // destroy old charts
+  Object.values(state.charts).forEach(c => c.destroy());
+  state.charts = {};
+
+  const d = state.statsData;
+  const el = document.getElementById('stats-content');
+
+  if (mode === 'date') {
+    const dates = Object.keys(d.date_totals).sort();
+    const rates = dates.map(dt => {
+      const {present, enrolled} = d.date_totals[dt];
+      return enrolled ? +(present/enrolled*100).toFixed(1) : 0;
+    });
+    const totals = dates.map(dt => d.date_totals[dt].present);
+
+    el.innerHTML = `
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-val">${dates.length}</div>
+          <div class="stat-label">출석 기록 일수</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">${rates.length ? (rates.reduce((a,b)=>a+b,0)/rates.length).toFixed(1) : 0}%</div>
+          <div class="stat-label">평균 출석률</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-val">${totals.length ? Math.max(...totals) : 0}</div>
+          <div class="stat-label">최대 출석 인원</div>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-title">날짜별 출석률 (%)</div>
+        <canvas id="chart-date-rate" height="200"></canvas>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-title">날짜별 출석 인원</div>
+        <canvas id="chart-date-count" height="200"></canvas>
+      </div>
+    `;
+
+    state.charts.r = new Chart(document.getElementById('chart-date-rate'), {
+      type: 'line',
+      data: {
+        labels: dates,
+        datasets: [{
+          label: '출석률 %',
+          data: rates,
+          borderColor: '#58a6ff',
+          backgroundColor: 'rgba(88,166,255,.1)',
+          fill: true,
+          tension: 0.3,
+          pointBackgroundColor: '#58a6ff'
+        }]
+      },
+      options: chartOpts('date-rate')
+    });
+
+    state.charts.c = new Chart(document.getElementById('chart-date-count'), {
+      type: 'bar',
+      data: {
+        labels: dates,
+        datasets: [{
+          label: '출석 인원',
+          data: totals,
+          backgroundColor: 'rgba(63,185,80,.6)',
+          borderColor: '#3fb950',
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: chartOpts('date-count')
+    });
+
+  } else if (mode === 'class') {
+    const cls = Object.keys(d.class_stats);
+    const rates = cls.map(c => d.class_stats[c].rate);
+    const enrolled = cls.map(c => d.class_stats[c].enrolled);
+
+    el.innerHTML = `
+      <div class="chart-wrap">
+        <div class="chart-title">반별 평균 출석률 (%)</div>
+        <canvas id="chart-class" height="220"></canvas>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-title">반별 학생 수</div>
+        <canvas id="chart-class-enrolled" height="200"></canvas>
+      </div>
+    `;
+
+    state.charts.cls = new Chart(document.getElementById('chart-class'), {
+      type: 'bar',
+      data: {
+        labels: cls,
+        datasets: [{
+          label: '출석률 %',
+          data: rates,
+          backgroundColor: cls.map((_,i) => `hsl(${200+i*25},70%,55%)`),
+          borderRadius: 6
+        }]
+      },
+      options: chartOpts('class')
+    });
+
+    state.charts.enr = new Chart(document.getElementById('chart-class-enrolled'), {
+      type: 'doughnut',
+      data: {
+        labels: cls,
+        datasets: [{
+          data: enrolled,
+          backgroundColor: cls.map((_,i) => `hsl(${200+i*25},60%,50%)`),
+        }]
+      },
+      options: { plugins: { legend: { labels: { color: '#e6edf3' } } } }
+    });
+
+  } else {
+    const stuList = Object.values(d.student_stats).sort((a,b) => b.rate - a.rate);
+    el.innerHTML = `
+      <div class="chart-wrap" style="margin-bottom:24px">
+        <div class="chart-title">개인별 출석률 (%)</div>
+        <canvas id="chart-student" height="260"></canvas>
+      </div>
+      <div class="student-stats-grid" id="stu-grid"></div>
+    `;
+
+    const names = stuList.map(s => `${s.class} ${s.name}`);
+    const rates = stuList.map(s => s.rate);
+
+    state.charts.stu = new Chart(document.getElementById('chart-student'), {
+      type: 'bar',
+      data: {
+        labels: names,
+        datasets: [{
+          label: '출석률 %',
+          data: rates,
+          backgroundColor: rates.map(r => r >= 80 ? 'rgba(63,185,80,.7)' : r >= 60 ? 'rgba(88,166,255,.7)' : 'rgba(247,129,102,.7)'),
+          borderRadius: 4
+        }]
+      },
+      options: { ...chartOpts('student'), indexAxis: 'y' }
+    });
+
+    const grid = document.getElementById('stu-grid');
+    stuList.forEach(s => {
+      const color = s.rate >= 80 ? '#3fb950' : s.rate >= 60 ? '#58a6ff' : '#f78166';
+      grid.insertAdjacentHTML('beforeend', `
+        <div class="stu-stat-card">
+          <div class="stu-name">${s.name}</div>
+          <div class="stu-class">${s.class}</div>
+          <div class="stu-rate-bar">
+            <div class="stu-rate-fill" style="width:${s.rate}%;background:${color}"></div>
+          </div>
+          <div class="stu-stat-nums">
+            <span>${s.present}/${s.sessions}회</span>
+            <span style="color:${color};font-weight:600">${s.rate}%</span>
+          </div>
+        </div>
+      `);
+    });
+  }
+}
+
+function chartOpts(id) {
+  return {
+    responsive: true,
+    plugins: { legend: { labels: { color: '#8b949e' } } },
+    scales: {
+      x: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } },
+      y: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } }
+    }
+  };
+}
+
+/* ── modal ─────────────────────────────────────────────── */
+let _modalCb = null;
+function openModal(title, placeholder, cb) {
+  _modalCb = cb;
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-input').placeholder = placeholder;
+  document.getElementById('modal-input').value = '';
+  document.getElementById('modal-overlay').style.display = 'flex';
+  document.getElementById('modal-confirm').onclick = async () => {
+    const val = document.getElementById('modal-input').value.trim();
+    if (!val) return;
+    await cb(val);
+    closeModal();
+  };
+  setTimeout(() => document.getElementById('modal-input').focus(), 50);
+}
+function closeModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').style.display = 'none';
+}
+document.getElementById('modal-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('modal-confirm').click();
+});
+
+/* ── toast ─────────────────────────────────────────────── */
+
+/* ── password change ────────────────────────────────────── */
+let _pwRole = 'user';
+
+function openPasswordModal() {
+  _pwRole = 'user';
+  document.getElementById('pw-new').value = '';
+  document.getElementById('pw-confirm').value = '';
+  document.getElementById('pw-error').textContent = '';
+  document.getElementById('pw-role-user').classList.add('active');
+  document.getElementById('pw-role-admin').classList.remove('active');
+  document.getElementById('pw-modal-overlay').style.display = 'flex';
+  setTimeout(() => document.getElementById('pw-new').focus(), 50);
+}
+
+function closePwModal(e) {
+  if (e && e.target !== document.getElementById('pw-modal-overlay')) return;
+  document.getElementById('pw-modal-overlay').style.display = 'none';
+}
+
+function setPwRole(btn, role) {
+  _pwRole = role;
+  document.querySelectorAll('#pw-role-user, #pw-role-admin').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function submitPwChange() {
+  const newPw = document.getElementById('pw-new').value;
+  const confirm = document.getElementById('pw-confirm').value;
+  const errEl = document.getElementById('pw-error');
+  if (newPw.length < 4) { errEl.textContent = '비밀번호는 4자 이상이어야 합니다.'; return; }
+  if (newPw !== confirm) { errEl.textContent = '비밀번호가 일치하지 않습니다.'; return; }
+  try {
+    await api('/api/change-password', 'POST', { role: _pwRole, password: newPw });
+    document.getElementById('pw-modal-overlay').style.display = 'none';
+    showToast('✅ 비밀번호가 변경되었습니다');
+  } catch {
+    errEl.textContent = '변경에 실패했습니다.';
+  }
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2400);
+}
+</script>
+
+<!-- ── PASSWORD MODAL ──────────────────────────────────── -->
+<div id="pw-modal-overlay" class="modal-overlay" style="display:none" onclick="closePwModal(event)">
+  <div class="modal" onclick="event.stopPropagation()" style="width:360px">
+    <h3>🔑 비밀번호 변경</h3>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="stats-tab-btn active" id="pw-role-user" onclick="setPwRole(this,'user')">일반 사용자</button>
+      <button class="stats-tab-btn" id="pw-role-admin" onclick="setPwRole(this,'admin')">관리자</button>
+    </div>
+    <input type="password" id="pw-new" placeholder="새 비밀번호 (4자 이상)" autocomplete="new-password" />
+    <input type="password" id="pw-confirm" placeholder="비밀번호 확인" autocomplete="new-password" />
+    <div style="color:var(--accent3);font-size:.82rem;min-height:18px;margin-bottom:8px" id="pw-error"></div>
+    <div class="modal-btns">
+      <button class="btn btn-ghost btn-sm" onclick="closePwModal()">취소</button>
+      <button class="btn btn-primary btn-sm" onclick="submitPwChange()">변경</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
