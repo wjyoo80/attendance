@@ -771,6 +771,9 @@ async function renderClassPanel(cls) {
       <div class="date-row">
         <label style="color:var(--muted);font-size:.85rem">날짜</label>
         <input type="date" id="date-picker" value="${state.selectedDate}" max="${today()}" />
+        ${state.isAdmin ? `
+          <button class="btn btn-danger btn-sm" onclick="deleteAttendanceDate()">기록 삭제</button>
+        ` : ''}
         <span style="color:var(--muted);font-size:.85rem" id="att-status"></span>
       </div>
       <div class="student-list-header">
@@ -856,6 +859,24 @@ async function saveAttendance(cls) {
     present: [...state.presentSet]
   });
   showToast('✅ 출석이 저장되었습니다');
+}
+
+async function deleteAttendanceDate() {
+  const date = state.selectedDate;
+
+  if (!confirm(`${date} 출석 기록을 삭제하시겠습니까?`)) return;
+
+  try {
+    await api(`/api/years/${state.activeYear}/attendance/${date}`, 'DELETE');
+
+    // 현재 화면 초기화
+    state.presentSet.clear();
+    renderStudents(state.activeClass);
+
+    showToast('🗑️ 출석 기록이 삭제되었습니다');
+  } catch (e) {
+    showToast('삭제 실패');
+  }
 }
 
 async function addStudent(cls) {

@@ -272,6 +272,19 @@ def get_attendance_date(year, date):
     data = load_year(year)
     return jsonify(data["attendance"].get(date, {}))
 
+@app.route("/api/years/<int:year>/attendance/<date>", methods=["DELETE"])
+@login_required
+@admin_required
+def delete_attendance_date(year, date):
+    data = load_year(year)
+
+    if date in data["attendance"]:
+        del data["attendance"][date]
+        save_year(year, data)
+        return jsonify({"ok": True})
+
+    return jsonify({"error": "not found"}), 404
+
 @app.route("/api/years/<int:year>/stats")
 @login_required
 def get_stats(year):
