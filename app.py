@@ -5,30 +5,41 @@ import hashlib
 import secrets
 from datetime import datetime
 from functools import wraps
+from supabase import create_client, Client
 
 app = Flask(__name__)
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
-os.makedirs(DATA_DIR, exist_ok=True)
+# ── Supabase 설정 ────────────────────────────────────────────────────────────
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") 
+BUCKET_NAME = "attendance_db"
+
+# print("SUPBASE_URL: " + SUPABASE_URL)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ── secret key ────────────────────────────────────────────────────────────────
-# Flask 세션 서명용 키를 파일에 저장 (재시작해도 세션 유지)
-SECRET_KEY_PATH = os.path.join(DATA_DIR, ".secret_key")
+SECRET_KEY_PATH = ".secret_key"
 
 def _load_or_create_secret_key() -> str:
-    if os.path.exists(SECRET_KEY_PATH):
-        with open(SECRET_KEY_PATH) as f:
-            return f.read().strip()
-    key = secrets.token_hex(32)
-    with open(SECRET_KEY_PATH, "w") as f:
-        f.write(key)
-    return key
+    try:
+        # Storage에서 기존 키 시도
+        response = supabase.storage.from_(BUCKET_NAME).download(SECRET_KEY_PATH)
+        return response.decode("utf-8").strip()
+    except Exception:
+        # 없으면 새로 생성 후 저장
+        key = secrets.token_hex(32)
+        supabase.storage.from_(BUCKET_NAME).upload(
+            path=SECRET_KEY_PATH,
+            file=key.encode("utf-8"),
+            file_options={"x-upsert": "true"}
+        )
+        return key
 
 app.secret_key = _load_or_create_secret_key()
 
 # ── password store ────────────────────────────────────────────────────────────
 # 저장 형식: {"user": {"hash": "...", "salt": "..."}, "admin": {...}}
-PASSWORDS_PATH = os.path.join(DATA_DIR, ".passwords.json")
+PASSWORDS_PATH = ".passwords.json"
 
 def _hash_password(password: str, salt: str | None = None) -> tuple[str, str]:
     """PBKDF2-HMAC-SHA256으로 비밀번호를 해시합니다. (salt, hash) 반환."""
@@ -43,14 +54,19 @@ def _hash_password(password: str, salt: str | None = None) -> tuple[str, str]:
     return salt, dk.hex()
 
 def _load_passwords() -> dict:
-    if os.path.exists(PASSWORDS_PATH):
-        with open(PASSWORDS_PATH, encoding="utf-8") as f:
-            return json.load(f)
-    return {}
+    try:
+        response = supabase.storage.from_(BUCKET_NAME).download(PASSWORDS_PATH)
+        return json.loads(response)
+    except Exception:
+        return {}
 
 def _save_passwords(data: dict) -> None:
-    with open(PASSWORDS_PATH, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    json_data = json.dumps(data, indent=2)
+    supabase.storage.from_(BUCKET_NAME).upload(
+        path=PASSWORDS_PATH,
+        file=json_data.encode("utf-8"),
+        file_options={"content-type": "application/json", "x-upsert": "true"}
+    )
 
 def _init_default_passwords() -> None:
     """최초 실행 시 기본 비밀번호를 해시화하여 저장합니다."""
@@ -83,42 +99,53 @@ _init_default_passwords()
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
-def data_path(year: int) -> str:
-    return os.path.join(DATA_DIR, f"{year}.json")
+def get_storage_path(year: int) -> str:
+    return f"{year}.json"
 
 def load_year(year: int) -> dict:
-    path = data_path(year)
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as f:
-            return json.load(f)
-    # default structure
-    return {
-        "year": year,
-        "classes": {
-            "중1": [], "중2": [], "중3": [],
-            "고1": [], "고2": [], "고3": []
-        },
-        "attendance": {}
-    }
+    storage_path = get_storage_path(year)
+    try:
+        response = supabase.storage.from_(BUCKET_NAME).download(storage_path)
+        return json.loads(response)
+    except Exception:
+        return {
+            "year": year,
+            "classes": {
+                "중1": [], "중2": [], "중3": [],
+                "고1": [], "고2": [], "고3": []
+            },
+            "attendance": {}
+        }
 
 def save_year(year: int, data: dict) -> None:
-    with open(data_path(year), "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    storage_path = get_storage_path(year)
+    json_data = json.dumps(data, ensure_ascii=False, indent=2)
+    supabase.storage.from_(BUCKET_NAME).upload(
+        path=storage_path,
+        file=json_data.encode("utf-8"),
+        file_options={"content-type": "application/json", "x-upsert": "true"}
+    )
 
 def get_available_years() -> list[int]:
-    years = []
-    for fn in os.listdir(DATA_DIR):
-        if fn.endswith(".json"):
-            try:
-                years.append(int(fn[:-5]))
-            except ValueError:
-                pass
-    if not years:
+    try:
+        res = supabase.storage.from_(BUCKET_NAME).list()
+        years = []
+        for item in res:
+            name = item['name']
+            if name.endswith(".json") and not name.startswith("."):
+                try:
+                    years.append(int(name[:-5]))
+                except ValueError:
+                    pass
+        if not years:
+            current = datetime.now().year
+            save_year(current, load_year(current))
+            years = [current]
+        return sorted(years, reverse=True)
+    except Exception:
         current = datetime.now().year
-        # create default
         save_year(current, load_year(current))
-        years = [current]
-    return sorted(years, reverse=True)
+        return [current]
 
 def login_required(f):
     @wraps(f)
@@ -194,8 +221,8 @@ def get_years():
 def create_year():
     body = request.get_json()
     year = int(body["year"])
-    if not os.path.exists(data_path(year)):
-        save_year(year, load_year(year))
+    # Supabase에서는 존재 여부 확인보다 바로 생성/로드 시도
+    save_year(year, load_year(year))
     return jsonify({"ok": True})
 
 @app.route("/api/years/<int:year>")
