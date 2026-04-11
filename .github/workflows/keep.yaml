@@ -1,0 +1,13 @@
+name: Sunday Keep-Alive
+
+on:
+  schedule:
+    - cron: '*/14 16,17 * * 6'
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake up Render Server
+        run: |
+          curl -I https://attendance-c4ey.onrender.com/
